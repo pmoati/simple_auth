@@ -40,9 +40,17 @@ public class SimpleAuthFlutterPlugin implements MethodCallHandler,StreamHandler 
   }
 
   @Override
-  public void onMethodCall(MethodCall call, Result result)   {
+  public void onMethodCall(final MethodCall call, Result result)   {
 
-    if(call.method.equals("showAuthenticator")){
+    if(call.method.equals("initAuthenticator")) { // noop
+      _eventSink.success( new HashMap<String, String>() {{
+        put("identifier",call.argument("identifier").toString());
+        put("url", "canceled");
+        put("forceComplete", "true");
+      }});
+      result.success("success");
+      return;
+    } else if(call.method.equals("showAuthenticator")){
       try {
         WebAuthenticator authenticator = new WebAuthenticator(call);
         authenticator.eventSink = _eventSink;

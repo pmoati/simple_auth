@@ -4,6 +4,8 @@ version: 2.0.11
 author: James Clancey <james.clancey@gmail.com>
 homepage: https://github.com/clancey/simple_auth
 
+publish_to: 'none'
+
 environment:
     sdk: '>=2.12.0 <3.0.0'
     flutter: ">=2.0.0"
@@ -11,7 +13,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  simple_auth: ^2.0.10
+  flutter_web_plugins:
+    sdk: flutter
+  simple_auth: 
+    path: ../simple_auth
+
 flutter:
   plugin:
     platforms:
@@ -22,6 +28,9 @@ flutter:
         pluginClass: SimpleAuthFlutterPlugin
       macos:
         pluginClass: SimpleAuthFlutterPlugin
+      web:
+        pluginClass: SimpleAuthFlutterWeb
+        fileName: simple_auth_flutter_web.dart
 
 dev_dependencies_overrides:
   simple_auth:

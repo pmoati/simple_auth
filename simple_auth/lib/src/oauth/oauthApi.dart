@@ -4,10 +4,13 @@ import "package:simple_auth/simple_auth.dart";
 import "package:http/http.dart" as http;
 import "dart:convert" as convert;
 
+typedef void InitAuthenticator(WebAuthenticator authenticator);
 typedef void ShowAuthenticator(WebAuthenticator authenticator);
 
 class OAuthApi extends AuthenticatedApi {
+  static InitAuthenticator? sharedInitAuthenticator;
   static ShowAuthenticator? sharedShowAuthenticator;
+  InitAuthenticator? initAuthenticator;
   ShowAuthenticator? showAuthenticator;
 
   OAuthAuthenticator? authenticator;
@@ -53,6 +56,60 @@ class OAuthApi extends AuthenticatedApi {
 
   OAuthAccount? get currentOauthAccount => currentAccount as OAuthAccount?;
 
+  Future<Account?> init() async {
+    if (scopesRequired && (scopes?.length ?? 0) == 0) {
+      throw Exception("Scopes are required");
+    }
+    OAuthAccount? account =
+        currentOauthAccount ?? await loadAccountFromCache<OAuthAccount>();
+    if (account != null &&
+        ((account.refreshToken?.isNotEmpty ?? false) ||
+            (account.expiresIn != null && account.expiresIn! <= 0))) {
+      var valid = account.isValid();
+      if (!valid || forceRefresh) {
+        //If there is no interent, give them the current expired account
+        if (!await pingUrl(tokenUrl!)) {
+          return account;
+        }
+        if (await refreshAccount(account))
+          account = currentOauthAccount ??
+              loadAccountFromCache<OAuthAccount>() as OAuthAccount;
+      }
+      if (account.isValid()) {
+        saveAccountToCache(account);
+        currentAccount = account;
+        return account;
+      }
+    }
+
+    var _authenticator = getAuthenticator()!;
+    await _authenticator.resetAuthenticator();
+
+    if (initAuthenticator != null)
+      initAuthenticator!(_authenticator as WebAuthenticator);
+    else if (sharedInitAuthenticator != null) {
+      sharedInitAuthenticator!(_authenticator as WebAuthenticator);
+    } else
+      throw new Exception(
+          "You are required to implement the 'initAuthenticator or sharedInitAuthenticator");
+
+    try {
+      var token = await _authenticator.getAuthCode();
+      if (token.isEmpty) {
+        throw new Exception("Null Token");
+      }
+      account =
+          await getAccountFromAuthCode(_authenticator as WebAuthenticator);
+      if (account.isValid()) {
+        saveAccountToCache(account);
+        currentAccount = account;
+        return account;
+      }
+    } catch (CancelledException) {}
+
+    return null;
+  }
+
   @override
   Future<Account?> performAuthenticate() async {
     if (scopesRequired && (scopes?.length ?? 0) == 0) {
@@ -70,7 +127,8 @@ class OAuthApi extends AuthenticatedApi {
           return account;
         }
         if (await refreshAccount(account))
-          account = currentOauthAccount ?? loadAccountFromCache<OAuthAccount>() as OAuthAccount;
+          account = currentOauthAccount ??
+              loadAccountFromCache<OAuthAccount>() as OAuthAccount;
       }
       if (account.isValid()) {
         saveAccountToCache(account);

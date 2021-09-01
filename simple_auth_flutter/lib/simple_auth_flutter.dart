@@ -20,6 +20,18 @@ class SimpleAuthFlutter implements simpleAuth.AuthStorage {
 
 //The map of all the currently in use authenticators
   static Map<String, simpleAuth.WebAuthenticator> authenticators = {};
+
+  static Future initAuthenticator(
+      simpleAuth.WebAuthenticator authenticator) async {
+    var initialUrl = await authenticator.getInitialUrl();
+    authenticators[authenticator.identifier!] = authenticator;
+    await _channel.invokeMethod("initAuthenticator", {
+      "initialUrl": initialUrl.toString(),
+      "identifier": authenticator.identifier,
+      "redirectUrl": authenticator.redirectUrl
+    });
+  }
+
   static Future showAuthenticator(
       simpleAuth.WebAuthenticator authenticator) async {
     if (authenticator.redirectUrl == null) {
@@ -39,6 +51,7 @@ class SimpleAuthFlutter implements simpleAuth.AuthStorage {
       "useEmbeddedBrowser": authenticator.useEmbeddedBrowser.toString(),
       "useSSO": authenticator.useSSO.toString()
     });
+
     if (url == "cancel") {
       authenticator.cancel();
       return;
@@ -58,10 +71,12 @@ class SimpleAuthFlutter implements simpleAuth.AuthStorage {
   static void init(BuildContext context) {
     SimpleAuthFlutter.context = context;
     simpleAuth.AuthStorage.shared = _shared;
+    simpleAuth.OAuthApi.sharedInitAuthenticator = initAuthenticator;
     simpleAuth.OAuthApi.sharedShowAuthenticator = showAuthenticator;
     simpleAuth.BasicAuthApi.sharedShowAuthenticator = showBasicAuthenticator;
-    onUrlChanged!.listen((UrlChange change) {
+    onUrlChanged!.listen((UrlChange change) async {
       var authenticator = authenticators[change.identifier!];
+
       if (change.url == "canceled") {
         authenticator!.cancel();
         return;
