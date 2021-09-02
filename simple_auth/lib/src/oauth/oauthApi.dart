@@ -4,13 +4,10 @@ import "package:simple_auth/simple_auth.dart";
 import "package:http/http.dart" as http;
 import "dart:convert" as convert;
 
-typedef void InitAuthenticator(WebAuthenticator authenticator);
-typedef void ShowAuthenticator(WebAuthenticator authenticator);
+typedef void ShowAuthenticator(WebAuthenticator authenticator, [bool showPrompt]);
 
 class OAuthApi extends AuthenticatedApi {
-  static InitAuthenticator? sharedInitAuthenticator;
   static ShowAuthenticator? sharedShowAuthenticator;
-  InitAuthenticator? initAuthenticator;
   ShowAuthenticator? showAuthenticator;
 
   OAuthAuthenticator? authenticator;
@@ -56,53 +53,63 @@ class OAuthApi extends AuthenticatedApi {
 
   OAuthAccount? get currentOauthAccount => currentAccount as OAuthAccount?;
 
-  Future<Account?> init() async {
+  Future<Account?> handleBrowserRedirect() async {
+    return await _getCachedAccount() ?? await _authenticate(showPrompt: false);
+  }
+
+  @override
+  Future<Account?> performAuthenticate() async {
+    return await _getCachedAccount() ?? await _authenticate(showPrompt: true);
+  }
+
+  Future<Account?> _getCachedAccount() async {
     if (scopesRequired && (scopes?.length ?? 0) == 0) {
       throw Exception("Scopes are required");
     }
-    OAuthAccount? account =
+    OAuthAccount? cachedAccount =
         currentOauthAccount ?? await loadAccountFromCache<OAuthAccount>();
-    if (account != null &&
-        ((account.refreshToken?.isNotEmpty ?? false) ||
-            (account.expiresIn != null && account.expiresIn! <= 0))) {
-      var valid = account.isValid();
+    if (cachedAccount != null &&
+        (_hasRefreshToken(cachedAccount) ||
+            _tokenNeverExpires(cachedAccount))) {
+      var valid = cachedAccount.isValid();
       if (!valid || forceRefresh) {
-        //If there is no interent, give them the current expired account
-        if (!await pingUrl(tokenUrl!)) {
-          return account;
+        //If there is internet, refresh the account
+        if (await pingUrl(tokenUrl!)) {
+          if (await refreshAccount(cachedAccount)) {
+            cachedAccount = currentOauthAccount ??
+                loadAccountFromCache<OAuthAccount>() as OAuthAccount;
+            if (cachedAccount.isValid()) {
+              _setCurrentAccount(cachedAccount);
+            }
+          }
         }
-        if (await refreshAccount(account))
-          account = currentOauthAccount ??
-              loadAccountFromCache<OAuthAccount>() as OAuthAccount;
-      }
-      if (account.isValid()) {
-        saveAccountToCache(account);
-        currentAccount = account;
-        return account;
+      } else if (valid) {
+        _setCurrentAccount(cachedAccount);
       }
     }
+    return cachedAccount;
+  }
 
-    var _authenticator = getAuthenticator()!;
-    await _authenticator.resetAuthenticator();
+  bool _hasRefreshToken(OAuthAccount cachedAccount) => cachedAccount.refreshToken?.isNotEmpty ?? false;
 
-    if (initAuthenticator != null)
-      initAuthenticator!(_authenticator as WebAuthenticator);
-    else if (sharedInitAuthenticator != null) {
-      sharedInitAuthenticator!(_authenticator as WebAuthenticator);
-    } else
-      throw new Exception(
-          "You are required to implement the 'initAuthenticator or sharedInitAuthenticator");
+  bool _tokenNeverExpires(OAuthAccount cachedAccount) => cachedAccount.expiresIn != null && cachedAccount.expiresIn! <= 0;
 
+  Future<Account?> _authenticate({required bool showPrompt}) async {
+    WebAuthenticator _authenticator = await _showCurrentAuthenticator(showPrompt);
+
+    return await _authenticateWithAuthCode(_authenticator);
+  }
+
+  Future<Account?> _authenticateWithAuthCode(WebAuthenticator _authenticator) async {
     try {
-      var token = await _authenticator.getAuthCode();
-      if (token.isEmpty) {
+      var authCode = await _authenticator.getAuthCode();
+      if (authCode.isEmpty) {
         throw new Exception("Null Token");
       }
-      account =
-          await getAccountFromAuthCode(_authenticator as WebAuthenticator);
+      OAuthAccount account =
+          await getAccountFromAuthCode(_authenticator);
       if (account.isValid()) {
-        saveAccountToCache(account);
-        currentAccount = account;
+        _setCurrentAccount(account);
         return account;
       }
     } catch (CancelledException) {}
@@ -110,50 +117,22 @@ class OAuthApi extends AuthenticatedApi {
     return null;
   }
 
-  @override
-  Future<Account?> performAuthenticate() async {
-    if (scopesRequired && (scopes?.length ?? 0) == 0) {
-      throw Exception("Scopes are required");
-    }
-    OAuthAccount? account =
-        currentOauthAccount ?? await loadAccountFromCache<OAuthAccount>();
-    if (account != null &&
-        ((account.refreshToken?.isNotEmpty ?? false) ||
-            (account.expiresIn != null && account.expiresIn! <= 0))) {
-      var valid = account.isValid();
-      if (!valid || forceRefresh) {
-        //If there is no interent, give them the current expired account
-        if (!await pingUrl(tokenUrl!)) {
-          return account;
-        }
-        if (await refreshAccount(account))
-          account = currentOauthAccount ??
-              loadAccountFromCache<OAuthAccount>() as OAuthAccount;
-      }
-      if (account.isValid()) {
-        saveAccountToCache(account);
-        currentAccount = account;
-        return account;
-      }
-    }
-
+  Future<WebAuthenticator> _showCurrentAuthenticator(bool showPrompt) async {
     var _authenticator = getAuthenticator()!;
     await _authenticator.resetAuthenticator();
     if (showAuthenticator != null)
-      showAuthenticator!(_authenticator as WebAuthenticator);
-    else if (sharedShowAuthenticator != null)
-      sharedShowAuthenticator!(_authenticator as WebAuthenticator);
-    else
+      showAuthenticator!(_authenticator as WebAuthenticator, showPrompt);
+    else if (sharedShowAuthenticator != null) {
+      sharedShowAuthenticator!(_authenticator as WebAuthenticator, showPrompt);
+    } else
       throw new Exception(
           "You are required to implement the 'showAuthenticator or sharedShowAuthenticator");
-    var token = await _authenticator.getAuthCode();
-    if (token.isEmpty) {
-      throw new Exception("Null Token");
-    }
-    account = await getAccountFromAuthCode(_authenticator);
+    return _authenticator;
+  }
+
+  void _setCurrentAccount(OAuthAccount account) {
     saveAccountToCache(account);
     currentAccount = account;
-    return account;
   }
 
   @override
