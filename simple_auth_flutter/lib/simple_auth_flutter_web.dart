@@ -44,7 +44,7 @@ class SimpleAuthFlutterWeb {
     switch (call.method) {
       case 'getPlatformVersion':
         return getPlatformVersion();
-      case 'initAuthenticator':
+      case 'showAuthenticator':
         var redirectUrl = call.arguments['redirectUrl'];
         if (redirectUrl != null &&
             Uri.parse(redirectUrl).path == Uri.parse(_initialUrl!).path) {
@@ -55,13 +55,10 @@ class SimpleAuthFlutterWeb {
             "description": ""
           });
         } else {
-          html.window.location.replace(
-              call.arguments['initialUrl'].toString() + "&prompt=none");
+          html.window.location.replace(call.arguments['initialUrl'].toString());
+          return "code";
         }
         return true;
-      case 'showAuthenticator':
-        html.window.location.replace(call.arguments['initialUrl'].toString());
-        return "code";
       case 'completed':
         return true;
       default:

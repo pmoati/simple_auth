@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -21,19 +22,8 @@ class SimpleAuthFlutter implements simpleAuth.AuthStorage {
 //The map of all the currently in use authenticators
   static Map<String, simpleAuth.WebAuthenticator> authenticators = {};
 
-  static Future initAuthenticator(
-      simpleAuth.WebAuthenticator authenticator) async {
-    var initialUrl = await authenticator.getInitialUrl();
-    authenticators[authenticator.identifier!] = authenticator;
-    await _channel.invokeMethod("initAuthenticator", {
-      "initialUrl": initialUrl.toString(),
-      "identifier": authenticator.identifier,
-      "redirectUrl": authenticator.redirectUrl
-    });
-  }
-
   static Future showAuthenticator(
-      simpleAuth.WebAuthenticator authenticator) async {
+      simpleAuth.WebAuthenticator authenticator, [bool showPrompt = true]) async {
     if (authenticator.redirectUrl == null) {
       authenticator.onError("redirectUrl cannot be null");
       return;
@@ -68,10 +58,9 @@ class SimpleAuthFlutter implements simpleAuth.AuthStorage {
 
   static SimpleAuthFlutter _shared = new SimpleAuthFlutter();
   static late BuildContext context;
-  static void init(BuildContext context) {
+  static Future<simpleAuth.Account?> init(BuildContext context, [simpleAuth.OAuthApi? authApi = null]) async {
     SimpleAuthFlutter.context = context;
     simpleAuth.AuthStorage.shared = _shared;
-    simpleAuth.OAuthApi.sharedInitAuthenticator = initAuthenticator;
     simpleAuth.OAuthApi.sharedShowAuthenticator = showAuthenticator;
     simpleAuth.BasicAuthApi.sharedShowAuthenticator = showBasicAuthenticator;
     onUrlChanged!.listen((UrlChange change) async {
@@ -92,6 +81,10 @@ class SimpleAuthFlutter implements simpleAuth.AuthStorage {
         authenticator.onError("Unable to get an AuthToken from the server");
       }
     });
+     if (kIsWeb) {
+       return authApi?.handleBrowserRedirect() ?? Future.value(null);
+     }
+     return Future.value(null);
   }
 
   static Stream<UrlChange>? _onUrlChanged;
