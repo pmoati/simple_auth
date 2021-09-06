@@ -10,10 +10,13 @@ import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 
 import 'dart:html';
 
+import 'package:simple_auth/simple_auth.dart';
+
 /// A web implementation of the SimpleAuthFlutter plugin.
 class SimpleAuthFlutterWeb {
   static String? _initialUrl;
   static StreamController<Map<Object?, Object?>>? _controller;
+  static AuthStorage _shared = new AuthStorage();
 
   static void registerWith(Registrar registrar) {
     final MethodChannel channel = MethodChannel(
@@ -61,6 +64,13 @@ class SimpleAuthFlutterWeb {
         return true;
       case 'completed':
         return true;
+      case 'getValue':
+        String key = call.arguments['key'];
+        return _shared.read(key: key);
+      case 'saveKey':
+        String key = call.arguments['key'];
+        String value = call.arguments['value'];
+        return _shared.write(key: key, value: value);
       default:
         throw PlatformException(
           code: 'Unimplemented',
