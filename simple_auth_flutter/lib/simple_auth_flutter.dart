@@ -58,7 +58,7 @@ class SimpleAuthFlutter implements simpleAuth.AuthStorage {
 
   static SimpleAuthFlutter _shared = new SimpleAuthFlutter();
   static late BuildContext context;
-  static Future<simpleAuth.Account?> init(BuildContext context, [simpleAuth.OAuthApi? authApi = null]) async {
+  static Future<simpleAuth.Account?> init(BuildContext context, [List<simpleAuth.OAuthApi>? authApiList = null]) async {
     SimpleAuthFlutter.context = context;
     simpleAuth.AuthStorage.shared = _shared;
     simpleAuth.OAuthApi.sharedShowAuthenticator = showAuthenticator;
@@ -82,7 +82,11 @@ class SimpleAuthFlutter implements simpleAuth.AuthStorage {
       }
     });
      if (kIsWeb) {
-       return authApi?.handleBrowserRedirect() ?? Future.value(null);
+       final redirectResponses = await Future.wait(
+         authApiList?.map((e) => e.handleBrowserRedirect()) ?? [Future.value(null)]
+       );
+
+       return redirectResponses.firstWhere((element) => element != null, orElse: null);
      }
      return Future.value(null);
   }
