@@ -26,6 +26,7 @@ import io.flutter.plugin.common.MethodChannel.Result;
 public class SimpleAuthFlutterPlugin implements FlutterPlugin, ActivityAware,MethodCallHandler,StreamHandler {
 
   private Context applicationContext;
+  private ActivityPluginBinding activityBinding;
   private MethodChannel methodChannel;
   private EventChannel eventChannel;
 
@@ -37,12 +38,12 @@ public class SimpleAuthFlutterPlugin implements FlutterPlugin, ActivityAware,Met
         authenticator.eventSink = _eventSink;
         authenticators.put(authenticator.identifier,authenticator);
 
-        if(authenticator.useEmbeddedBrowser) {
+        if(authenticator.useEmbeddedBrowser || activityBinding == null) {
           WebAuthenticatorActivity.presentAuthenticator(applicationContext,authenticator);
         }
         else
         {
-          CustomTabsAuthenticator.presentAuthenticator(applicationContext,authenticator);
+          CustomTabsAuthenticator.presentAuthenticator(activityBinding.getActivity(),authenticator);
         }
 
         result.success("success");
@@ -154,16 +155,23 @@ public class SimpleAuthFlutterPlugin implements FlutterPlugin, ActivityAware,Met
 
   @Override
   public void onAttachedToActivity(@NonNull ActivityPluginBinding activityPluginBinding) {
+    activityBinding = activityPluginBinding;
     Application app = activityPluginBinding.getActivity().getApplication();
     CustomTabsAuthenticator.Setup(app);
   }
 
   @Override
-  public void onDetachedFromActivityForConfigChanges() {}
+  public void onDetachedFromActivityForConfigChanges() {
+    activityBinding = null;
+  }
 
   @Override
-  public void onReattachedToActivityForConfigChanges(@NonNull ActivityPluginBinding activityPluginBinding) {}
+  public void onReattachedToActivityForConfigChanges(@NonNull ActivityPluginBinding activityPluginBinding) {
+    activityBinding = activityPluginBinding;
+  }
 
   @Override
-  public void onDetachedFromActivity() {}
+  public void onDetachedFromActivity() {
+    activityBinding = null;
+  }
 }
