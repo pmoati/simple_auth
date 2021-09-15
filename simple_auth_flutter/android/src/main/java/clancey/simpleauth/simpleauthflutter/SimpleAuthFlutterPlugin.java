@@ -38,7 +38,7 @@ public class SimpleAuthFlutterPlugin implements FlutterPlugin, ActivityAware,Met
         authenticator.eventSink = _eventSink;
         authenticators.put(authenticator.identifier,authenticator);
 
-        if(authenticator.useEmbeddedBrowser || activityBinding == null) {
+        if(authenticator.useEmbeddedBrowser) {
           WebAuthenticatorActivity.presentAuthenticator(applicationContext,authenticator);
         }
         else
