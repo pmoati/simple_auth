@@ -54,14 +54,12 @@ class OAuthApi extends AuthenticatedApi {
   OAuthAccount? get currentOauthAccount => currentAccount as OAuthAccount?;
 
   Future<Account?> handleBrowserRedirect() async {
-    var showPrompt = false;
-    return await _getCachedAccount() ?? await _authenticate(showPrompt);
+    return await _getCachedAccount() ?? await _authenticate(showPrompt: false);
   }
 
   @override
   Future<Account?> performAuthenticate() async {
-    var showPrompt = true;
-    return await _getCachedAccount() ?? await _authenticate(showPrompt);
+    return await _getCachedAccount() ?? await _authenticate(showPrompt: true);
   }
 
   Future<Account?> _getCachedAccount() async {
@@ -96,7 +94,7 @@ class OAuthApi extends AuthenticatedApi {
 
   bool _tokenNeverExpires(OAuthAccount cachedAccount) => cachedAccount.expiresIn != null && cachedAccount.expiresIn! <= 0;
 
-  Future<Account?> _authenticate(bool showPrompt) async {
+  Future<Account?> _authenticate({required bool showPrompt}) async {
     WebAuthenticator _authenticator = await _showCurrentAuthenticator(showPrompt);
 
     return await _authenticateWithAuthCode(_authenticator);
