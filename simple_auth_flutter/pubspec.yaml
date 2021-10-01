@@ -34,4 +34,7 @@ flutter:
 
 dev_dependencies_overrides:
   simple_auth:
-    path: ../simple_auth
+    git:
+      url: https://github.com/bluelabsw/simple_auth.git
+      ref: 075d30fa545e824b3a1287e61ab0170cbd325e51
+      path: simple_auth
