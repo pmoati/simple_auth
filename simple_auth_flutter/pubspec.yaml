@@ -17,6 +17,11 @@ dependencies:
     sdk: flutter
   simple_auth: ^2.0.10
 
+dependency_overrides:
+  simple_auth:
+    path: ../simple_auth
+
+
 flutter:
   plugin:
     platforms:
@@ -30,17 +35,3 @@ flutter:
       web:
         pluginClass: SimpleAuthFlutterWeb
         fileName: simple_auth_flutter_web.dart
-
-dev_dependencies_overrides:
-  simple_auth:
-    git:
-      url: https://github.com/bluelabsw/simple_auth.git
-      ref: 075d30fa545e824b3a1287e61ab0170cbd325e51
-      path: simple_auth
-
-dependencies_overrides:
-  simple_auth:
-    git:
-      url: https://github.com/bluelabsw/simple_auth.git
-      ref: 075d30fa545e824b3a1287e61ab0170cbd325e51
-      path: simple_auth
