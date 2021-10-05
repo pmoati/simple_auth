@@ -58,7 +58,11 @@ class SimpleAuthFlutterWeb {
             "description": ""
           });
         } else {
-          html.window.location.replace(call.arguments['initialUrl'].toString());
+          bool showPrompt = true;
+          if(call.arguments['showPrompt'] != null){
+            showPrompt = call.arguments['showPrompt'];
+          }
+          html.window.location.replace(call.arguments['initialUrl'].toString() + (showPrompt ? '' : '&prompt=none'));
           return "code";
         }
         return true;
