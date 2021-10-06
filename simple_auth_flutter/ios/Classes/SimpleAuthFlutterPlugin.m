@@ -28,6 +28,13 @@
 }
 
 - (void)handleMethodCall:(FlutterMethodCall*)call result:(FlutterResult)result {
+    if ([@"initAuthenticator" isEqualToString:call.method]) {
+        NSDictionary *argsMap = call.arguments;
+        NSDictionary *resultsMap = @{@"identifier": argsMap[@"identifier"], @"url": @"canceled", @"forceComplete": @"true"};
+        _eventSink(resultsMap);
+        result(@"success");
+        return;
+    }
     if ([@"showAuthenticator" isEqualToString:call.method]) {
         NSDictionary *argsMap = call.arguments;
         WebAuthenticator *authenticator = [[WebAuthenticator alloc] initFromDictionary:argsMap];
