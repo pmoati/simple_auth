@@ -48,6 +48,12 @@ class SimpleAuthFlutterWeb {
       case 'getPlatformVersion':
         return getPlatformVersion();
       case 'showAuthenticator':
+
+        if (shouldDisplayPrompt(call)) {
+          html.window.location.replace(call.arguments['initialUrl'].toString());
+          return "code";
+        }
+
         var redirectUrl = call.arguments['redirectUrl'];
         if (redirectUrl != null &&
             Uri.parse(redirectUrl).path == Uri.parse(_initialUrl!).path) {
@@ -58,23 +64,18 @@ class SimpleAuthFlutterWeb {
             "description": ""
           });
         } else {
-          bool showPrompt = true;
-          if(call.arguments['showPrompt'] != null){
-            showPrompt = call.arguments['showPrompt'];
-          }
-          html.window.location.replace(call.arguments['initialUrl'].toString() + (showPrompt ? '' : '&prompt=none'));
-          return "code";
+          html.window.location.replace(call.arguments['initialUrl'].toString() + '&prompt=none');
         }
-        return true;
+        return "no-prompt";
       case 'completed':
         return true;
-      case 'getValue':
-        String key = call.arguments['key'];
-        return _shared.read(key: key);
-      case 'saveKey':
-        String key = call.arguments['key'];
-        String value = call.arguments['value'];
-        return _shared.write(key: key, value: value);
+      // case 'getValue':
+      //   String key = call.arguments['key'];
+      //   return _shared.read(key: key);
+      // case 'saveKey':
+      //   String key = call.arguments['key'];
+      //   String value = call.arguments['value'];
+      //   return _shared.write(key: key, value: value);
       default:
         throw PlatformException(
           code: 'Unimplemented',
@@ -82,6 +83,14 @@ class SimpleAuthFlutterWeb {
               'simple_auth_flutter for web doesn\'t implement \'${call.method}\'',
         );
     }
+  }
+
+  bool shouldDisplayPrompt(MethodCall call) {
+    bool showPrompt = true;
+    if(call.arguments['showPrompt'] != null){
+      showPrompt = call.arguments['showPrompt'];
+    }
+    return showPrompt;
   }
 
   /// Returns a [String] containing the version of the platform.
