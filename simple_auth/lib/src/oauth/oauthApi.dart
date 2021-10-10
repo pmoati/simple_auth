@@ -145,7 +145,7 @@ class OAuthApi extends AuthenticatedApi {
       sharedShowAuthenticator!(_authenticator as WebAuthenticator);
     else
       throw new Exception(
-          "You are required to implement the 'showAuthenticator or sharedShowAuthenticator");
+          "You are required to implement the 'showAuthenticator or sharedShowAuthenticator ");
     var token = await _authenticator.getAuthCode();
     if (token.isEmpty) {
       throw new Exception("Null Token");
