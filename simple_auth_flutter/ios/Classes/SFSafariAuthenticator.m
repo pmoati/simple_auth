@@ -151,4 +151,14 @@ SFSafariViewController *controller;
     return returnArray;
 }
 
+// MARK: - SFSafariViewControllerDelegate
+
+- (void)safariViewControllerDidFinish:(SFSafariViewController *)controller {
+    for (id authenticator in [SFSafariAuthenticator.authenticators allValues]) {
+        if ([authenticator isKindOfClass:[WebAuthenticator class]]) {
+            [(WebAuthenticator *) authenticator cancel];
+        }
+    }
+}
+
 @end
