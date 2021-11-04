@@ -79,6 +79,7 @@ SFSafariViewController *controller;
             controller = [[SFSafariViewController alloc] initWithURL:authenticator.initialUrl];
             controller.delegate = self;
             [viewController presentViewController:controller animated:true completion:nil];
+            [authenticator cancel];
             return;
         }
         BOOL opened = [UIApplication.sharedApplication openURL:authenticator.initialUrl];
@@ -148,6 +149,16 @@ SFSafariViewController *controller;
         }
     }
     return returnArray;
+}
+
+// MARK: - SFSafariViewControllerDelegate
+
+- (void)safariViewControllerDidFinish:(SFSafariViewController *)controller {
+    for (id authenticator in [SFSafariAuthenticator.authenticators allValues]) {
+        if ([authenticator isKindOfClass:[WebAuthenticator class]]) {
+            [(WebAuthenticator *) authenticator cancel];
+        }
+    }
 }
 
 @end
