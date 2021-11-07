@@ -31,7 +31,7 @@ public class SimpleAuthFlutterPlugin implements FlutterPlugin, ActivityAware,Met
   private EventChannel eventChannel;
 
   @Override
-  public void onMethodCall(MethodCall call, Result result)   {
+  public void onMethodCall(final MethodCall call, final Result result)   {
     if(call.method.equals("initAuthenticator")) { // noop
       _eventSink.success( new HashMap<String, String>() {{
         put("identifier",call.argument("identifier").toString());
