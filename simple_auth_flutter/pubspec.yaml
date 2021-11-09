@@ -30,7 +30,3 @@ flutter:
       web:
         pluginClass: SimpleAuthFlutterWeb
         fileName: simple_auth_flutter_web.dart
-
-dev_dependencies_overrides:
-  simple_auth:
-    path: ../simple_auth
