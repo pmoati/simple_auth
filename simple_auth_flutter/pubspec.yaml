@@ -15,8 +15,6 @@ dependencies:
     sdk: flutter
   flutter_web_plugins:
     sdk: flutter
-  simple_auth: 
-    path: ../simple_auth
 
 flutter:
   plugin:
