@@ -30,3 +30,10 @@ flutter:
       web:
         pluginClass: SimpleAuthFlutterWeb
         fileName: simple_auth_flutter_web.dart
+        
+dev_dependencies_overrides:
+  simple_auth:
+    git:
+      url: git://github.com/pmoati/simple_auth.git
+      path: simple_auth
+      ref: feature/add-redirect-handling
